@@ -1,11 +1,6 @@
 name: build-windows
 on:
   workflow_dispatch:
-    inputs:
-      arch:
-        description: 'amd64 or arm64'
-        required: false
-        default: 'amd64'
 jobs:
   build:
     runs-on: windows-latest
@@ -42,7 +37,7 @@ jobs:
       - name: Build with setup.dart
         shell: bash
         run: |
-          dart setup.dart windows --arch ${{ inputs.arch }} 2>&1 | tee build.log
+          dart setup.dart windows 2>&1 | tee build.log
 
       - name: Upload logs
         if: always()
