@@ -1,0 +1,63 @@
+name: build-windows
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'amd64 or arm64'
+        required: false
+        default: 'amd64'
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Versions
+        shell: bash
+        run: |
+          go version
+          flutter --version
+          gcc --version | head -n 1 || echo "gcc not found"
+
+      - name: flutter pub get
+        shell: bash
+        run: flutter pub get 2>&1 | tee pubget.log
+
+      - name: Build with setup.dart
+        shell: bash
+        run: |
+          dart setup.dart windows --arch ${{ inputs.arch }} 2>&1 | tee build.log
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: |
+            pubget.log
+            build.log
+          if-no-files-found: ignore
+
+      - name: Upload installer
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-dist
+          path: dist/
+          if-no-files-found: warn
